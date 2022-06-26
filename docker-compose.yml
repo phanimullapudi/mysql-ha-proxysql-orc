@@ -1,0 +1,126 @@
+version: '2.1'
+
+services:
+
+  mysql-master:
+    image: docker.io/bitnami/mysql:8.0
+    ports:
+      - '3306'
+    volumes:
+      - 'mysql_master_data:/bitnami/mysql/data'
+    environment:
+      - MYSQL_REPLICATION_MODE=master
+      - MYSQL_REPLICATION_USER=repl_user
+      - MYSQL_USER=my_user
+      - MYSQL_DATABASE=my_database
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_ROOT_PASSWORD=my_root_password
+    healthcheck:
+      test: ['CMD', '/opt/bitnami/scripts/mysql/healthcheck.sh']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  mysql-slave1:
+    image: docker.io/bitnami/mysql:8.0
+    ports:
+      - '3306'
+    depends_on:
+      - mysql-master
+    environment:
+      - MYSQL_REPLICATION_MODE=slave
+      - MYSQL_REPLICATION_USER=repl_user
+      - MYSQL_USER=my_user
+      - MYSQL_DATABASE=my_database
+      - MYSQL_MASTER_HOST=mysql-master
+      - MYSQL_MASTER_PORT_NUMBER=3306
+      - MYSQL_MASTER_ROOT_PASSWORD=my_root_password
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: ['CMD', '/opt/bitnami/scripts/mysql/healthcheck.sh']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  mysql-slave2:
+    image: docker.io/bitnami/mysql:8.0
+    ports:
+      - '3306'
+    depends_on:
+      - mysql-master
+    environment:
+      - MYSQL_REPLICATION_MODE=slave
+      - MYSQL_REPLICATION_USER=repl_user
+      - MYSQL_USER=my_user
+      - MYSQL_DATABASE=my_database
+      - MYSQL_MASTER_HOST=mysql-master
+      - MYSQL_MASTER_PORT_NUMBER=3306
+      - MYSQL_MASTER_ROOT_PASSWORD=my_root_password
+      # ALLOW_EMPTY_PASSWORD is recommended only for development.
+      - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: ['CMD', '/opt/bitnami/scripts/mysql/healthcheck.sh']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  proxysql:
+    image: proxysql/proxysql:latest
+    ports:
+      - "16033:6033"
+      - "16032:6032"
+    volumes:
+      - ./conf/proxysql/proxysql.cnf:/etc/proxysql.cnf
+    depends_on:
+      - mysql-master
+      - mysql-slave1
+      - mysql-slave2
+
+  orc1:
+    build: ./conf/orc
+    ports:
+      - "23101:3000"
+    volumes:
+      - ./conf/orc/orc1/orchestrator.conf.json:/etc/orchestrator.conf.json
+      - ./conf/orc/remove-proxysql-host.bash:/root/remove-proxysql-host.bash
+    depends_on:
+      - mysql-master
+      - mysql-slave1
+      - mysql-slave2
+      - proxysql
+
+  orc2:
+    build: ./conf/orc
+    ports:
+      - "23102:3000"
+    volumes:
+      - ./conf/orc/orc2/orchestrator.conf.json:/etc/orchestrator.conf.json
+      - ./conf/orc/remove-proxysql-host.bash:/root/remove-proxysql-host.bash
+    depends_on:
+      - mysql-master
+      - mysql-slave1
+      - mysql-slave2
+      - proxysql
+
+  orc3:
+    build: ./conf/orc
+    ports:
+      - "23103:3000"
+    volumes:
+      - ./conf/orc/orc3/orchestrator.conf.json:/etc/orchestrator.conf.json
+      - ./conf/orc/remove-proxysql-host.bash:/root/remove-proxysql-host.bash
+    depends_on:
+      - mysql-master
+      - mysql-slave1
+      - mysql-slave2
+      - proxysql
+ 
+volumes:
+  mysql_master_data:
+    driver: local
+networks:
+  default:
+    name: mysql-ha
+    external: true
