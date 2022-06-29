@@ -54,6 +54,7 @@ services:
       retries: 0
   proxysql:
     image: proxysql/proxysql:latest
+    hostname: proxysql
     ports:
       - "16033:6033"
       - "16032:6032"
@@ -61,19 +62,44 @@ services:
       - ./conf/proxysql/proxysql.cnf:/etc/proxysql.cnf
     depends_on:
       - mysql-master
-      - mysql-slave
+      - mysql-bslave
+      - mysql-rslave
 
   orc1:
     build: ./conf/orchestrator
+    hostname: orchestrator
     ports:
       - "23101:3000"
     volumes:
       - ./conf/orchestrator/conf/orchestrator-sample-sqlite.conf.json:/etc/orchestrator.conf.json
+      - ./conf/orchestrator/conf/start.sh:/tmp/start.sh
     depends_on:
       - mysql-master
-      - mysql-slave
-      - proxysql
- 
+      - mysql-bslave
+      - mysql-rslave
+      - proxysql 
+    command: "sh /tmp/start.sh"
+  
+  consul-server:
+    image: hashicorp/consul:1.10.0
+    container_name: consul-server
+    restart: always
+    volumes:
+     - ./conf/consul/server.json:/consul/config/server.json:ro
+    ports:
+      - "8500:8500"
+      - "8600:8600/tcp"
+      - "8600:8600/udp"
+    command: "agent"
+
+  consul-client:
+    image: hashicorp/consul:1.10.0
+    container_name: consul-client
+    restart: always
+    volumes:
+     - ./conf/consul/client.json:/consul/config/client.json:ro
+    command: "agent"
+
 volumes:
   mysql_master_data:
     driver: local
