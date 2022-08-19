@@ -1,3 +1,4 @@
+systemctl start orchestrator.service
 sleep 30
 orchestrator -c discover -i mysql-master
 sleep 3
