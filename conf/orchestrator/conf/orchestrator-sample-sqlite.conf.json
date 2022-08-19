@@ -132,7 +132,7 @@
     "GraphiteAddr": "",
     "GraphitePath": "",
     "GraphiteConvertHostnameDotsToUnderscores": true,
-    "ConsulAddress": "consul-server:8500",
+    "ConsulAddress": "consul-dev:8500",
     "KVClusterMasterPrefix": "mysql/master",
     "ConsulAclToken": "",
     "ConsulKVStoreProvider": "consul"

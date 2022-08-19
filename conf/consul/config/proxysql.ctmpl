@@ -1,0 +1,10 @@
+{{ if keyExists "mysql/master/mysql-master:3306/hostname" }}
+DELETE FROM mysql_servers where hostgroup_id=10;
+REPLACE into mysql_servers (hostgroup_id, hostname) values ( 10, "{{ key "mysql/master/mysql-master:3306/hostname" }}" );
+{{ end }}
+
+{{ range tree "mysql/slave/mysql-master:3306" }}
+REPLACE into mysql_servers (hostgroup_id, hostname) values ( 20, "{{ .Key }}{{ .Value }}" );
+{{ end }}
+LOAD MYSQL SERVERS TO RUNTIME;
+SAVE MYSQL SERVERS TO DISK;
