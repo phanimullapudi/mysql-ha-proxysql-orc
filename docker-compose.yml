@@ -62,7 +62,7 @@ services:
       - mysql-bslave
       - mysql-rslave
 
-  orc1:
+  orchestrator:
     build: ./conf/orchestrator
     hostname: orchestrator
     ports:
@@ -77,26 +77,34 @@ services:
       - proxysql 
     command: "sh /tmp/start.sh"
   
-  consul-server:
-    image: hashicorp/consul:1.10.0
-    container_name: consul-server
-    restart: always
-    volumes:
-     - ./conf/consul/server.json:/consul/config/server.json:ro
+  consul-dev:
+    image: consul:latest
+    container_name: "consul-dev"
+    hostname: consul-dev
     ports:
-      - "8500:8500"
-      - "8600:8600/tcp"
-      - "8600:8600/udp"
-    command: "agent"
-
-  consul-client:
-    image: hashicorp/consul:1.10.0
-    container_name: consul-client
-    restart: always
+     - "8500:8500"
+     - "8600:8600/udp"
+    depends_on:
+      - mysql-master
+      - mysql-bslave
+      - mysql-rslave
+      - proxysql
+      - orchestrator
+    command: consul agent -dev -client=0.0.0.0
+  consul-template:
+    build: ./conf/consul
+    hostname: consul-template-new
+    depends_on:
+      - mysql-master
+      - mysql-bslave
+      - mysql-rslave
+      - proxysql
+      - consul-dev
+      - orchestrator
     volumes:
-     - ./conf/consul/client.json:/consul/config/client.json:ro
-    command: "agent"
-
+     - "./conf/consul/config/proxysql.ctmpl:/opt/consul-template/templates/proxysql.ctmpl:ro"
+     - "./conf/consul/consul-template.cfg:/opt/consul-template/config/consul-template.cfg"
+    command: consul-template -config /opt/consul-template/config/consul-template.cfg
 volumes:
   mysql_master_data:
     driver: local
