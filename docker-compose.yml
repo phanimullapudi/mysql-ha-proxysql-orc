@@ -21,6 +21,8 @@ services:
     hostname: mysql-rslave
     ports:
       - '3306'
+    volumes:
+      - ./conf/mysql/mysql-rslave-my.cnf:/opt/bitnami/mysql/conf/my.cnf
     depends_on:
       - mysql-master
     environment:
@@ -37,7 +39,7 @@ services:
     ports:
       - '3306'
     volumes:
-      - ./conf/mysql/create-orcuser.sh:/tmp/create-orcuser.sh
+      - ./conf/mysql/mysql-bslave-my.cnf:/opt/bitnami/mysql/conf/my.cnf
     depends_on:
       - mysql-master
     environment:
@@ -46,12 +48,7 @@ services:
       - MYSQL_REPLICATION_PASSWORD=repl_password
       - MYSQL_MASTER_HOST=mysql-master
       - MYSQL_MASTER_PORT_NUMBER=3306
-      - MYSQL_MASTER_ROOT_PASSWORD=master_root_password
-    healthcheck:
-      test: ['CMD', 'sh /tmp/create-orcuser.sh']
-      interval: 15s
-      timeout: 5s
-      retries: 0
+      - MYSQL_MASTER_ROOT_PASSWORD=master_root_password 
   proxysql:
     image: proxysql/proxysql:latest
     hostname: proxysql
