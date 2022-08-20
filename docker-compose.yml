@@ -8,6 +8,8 @@ services:
       - '3306'
     volumes:
       - ./mysql-persistence/data:/bitnami/mysql/data
+      - ./conf/mysql/mysql-master-my.cnf:/opt/bitnami/mysql/conf/my.cnf
+      - ./conf/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - MYSQL_REPLICATION_MODE=master
       - MYSQL_REPLICATION_USER=repl_user
