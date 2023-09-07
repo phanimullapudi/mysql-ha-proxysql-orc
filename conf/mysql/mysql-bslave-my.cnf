@@ -30,4 +30,3 @@ plugin_dir=/opt/bitnami/mysql/lib/plugin
 port=3306
 socket=/opt/bitnami/mysql/tmp/mysql.sock
 pid_file=/opt/bitnami/mysql/tmp/mysqld.pid
-

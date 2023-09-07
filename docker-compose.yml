@@ -16,6 +16,10 @@ services:
       - MYSQL_USER=my_user
       - MYSQL_PASSWORD=my_password
       - MYSQL_DATABASE=my_database
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
   mysql-rslave:
     image: 'bitnami/mysql:latest'
     hostname: mysql-rslave
@@ -32,6 +36,10 @@ services:
       - MYSQL_MASTER_HOST=mysql-master
       - MYSQL_MASTER_PORT_NUMBER=3306
       - MYSQL_MASTER_ROOT_PASSWORD=master_root_password
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
 
   mysql-bslave:
     image: 'bitnami/mysql:latest'
@@ -48,7 +56,11 @@ services:
       - MYSQL_REPLICATION_PASSWORD=repl_password
       - MYSQL_MASTER_HOST=mysql-master
       - MYSQL_MASTER_PORT_NUMBER=3306
-      - MYSQL_MASTER_ROOT_PASSWORD=master_root_password 
+      - MYSQL_MASTER_ROOT_PASSWORD=master_root_password
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
   proxysql:
     image: proxysql/proxysql:latest
     hostname: proxysql
@@ -78,7 +90,7 @@ services:
     command: "sh /tmp/start.sh"
   
   consul-dev:
-    image: consul:latest
+    image: hashicorp/consul:latest
     container_name: "consul-dev"
     hostname: consul-dev
     ports:
@@ -105,6 +117,37 @@ services:
      - "./conf/consul/config/proxysql.ctmpl:/opt/consul-template/templates/proxysql.ctmpl:ro"
      - "./conf/consul/consul-template.cfg:/opt/consul-template/config/consul-template.cfg"
     command: consul-template -config /opt/consul-template/config/consul-template.cfg
+  
+  dolphie:
+    image: ghcr.io/charles-001/dolphie:latest
+    container_name: "dolphie"
+    hostname: dolphie
+    tty: true
+    ports:
+      - '22'
+    depends_on:
+      - mysql-master
+      - mysql-bslave
+      - mysql-rslave
+      - proxysql
+      - consul-dev
+      - orchestrator
+    restart: on-failure
+    volumes:
+    - "./conf/dolphie/my.cnf:/.my.cnf"
+  sysbench-prepare:
+    image: severalnines/sysbench
+    container_name: sb-prepare
+    tty: true
+    depends_on:
+      - mysql-master
+      - mysql-bslave
+      - mysql-rslave
+      - proxysql
+      - consul-dev
+      - orchestrator
+      - dolphie
+    restart: on-failure
 volumes:
   mysql_master_data:
     driver: local
